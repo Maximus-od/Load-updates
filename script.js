@@ -9,7 +9,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // !!! ВАЖНО: Замените это на URL вашего бэкенда, который выводится в консоли main.py !!!
     // Например: "https://xxxxxxxxxxxx.ngrok-free.app/web/submit_report"
-    const backendApiUrl = "YOUR_BACKEND_API_URL_HERE/web/submit_report";
+    const backendApiUrl = "https://fae9-83-24-135-174.ngrok-free.app/web/submit_report";
 
     let tgUser = null;
 
