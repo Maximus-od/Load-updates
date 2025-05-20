@@ -183,7 +183,8 @@
                 if (bolPictureFile) {
                     try {
                         // Resize image before converting to Base64
-                        photoDataBase64 = await resizeImageAndToB64(bolPictureFile, 800, 0.7); // Max width/height 800px, quality 0.7
+                        // Changed maxWidthOrHeight to 600 and quality to 0.65
+                        photoDataBase64 = await resizeImageAndToB64(bolPictureFile, 600, 0.65); 
                         console.log("Resized photo Base64 length:", photoDataBase64 ? photoDataBase64.length : 0);
                     } catch (error) {
                         console.error("Error resizing or converting image to Base64:", error);
@@ -201,18 +202,19 @@
                     photo_data_base64: photoDataBase64 
                 };
 
-                console.log("Data to be sent (length):", JSON.stringify(reportData).length, reportData);
+                const jsonDataString = JSON.stringify(reportData);
+                console.log("Data to be sent (length):", jsonDataString.length, reportData);
                 
-                if (JSON.stringify(reportData).length > 4000) { // A bit less than 4096 for safety
-                     console.warn("Data is still too long after resize attempt. Photo might be very complex or not resizing enough.");
-                     statusMessage.textContent = 'Report data is too large, even after image processing. Try a smaller image.';
+                if (jsonDataString.length > 4000) { // A bit less than 4096 for safety
+                     console.warn("Data is still too long after resize attempt. Photo might be very complex or not resizing enough. Length: " + jsonDataString.length);
+                     statusMessage.textContent = 'Report data is too large (' + jsonDataString.length + ' bytes), even after image processing. Try a smaller or simpler image.';
                      submitButton.disabled = false;
                      tg.MainButton.hideProgress();
                      return;
                 }
 
                 try {
-                    tg.sendData(JSON.stringify(reportData));
+                    tg.sendData(jsonDataString);
                     statusMessage.textContent = 'Report submitted! You can close this window.';
                     // tg.close(); // Optionally close after successful submission
                 } catch (error) {
@@ -277,10 +279,12 @@
                         resolve(canvas.toDataURL('image/jpeg', quality)); // Use image/jpeg for better compression
                     };
                     img.onerror = (error) => {
+                        console.error("Image loading error in resize function:", error);
                         reject(error);
                     };
                 };
                 reader.onerror = (error) => {
+                    console.error("FileReader error in resize function:", error);
                     reject(error);
                 };
             });
