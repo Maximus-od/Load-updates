@@ -123,23 +123,10 @@
 
     <script>
         const tg = window.Telegram.WebApp;
-        console.log("Telegram WebApp object (tg):", tg); 
-        // NEW DEBUG LOG: Check initData
-        console.log("Telegram WebApp tg.initData:", tg.initData);
-        console.log("Telegram WebApp tg.initDataUnsafe:", tg.initDataUnsafe);
-
 
         document.addEventListener('DOMContentLoaded', function () {
-            console.log("DOM fully loaded and parsed"); 
-            try {
-                tg.ready();
-                console.log("Telegram WebApp SDK 'ready' called."); 
-                tg.expand(); 
-                console.log("Telegram WebApp SDK 'expand' called."); 
-            } catch (e) {
-                console.error("Error during Telegram WebApp SDK initialization:", e); 
-            }
-
+            tg.ready();
+            tg.expand(); 
 
             const form = document.getElementById('reportForm');
             const submitButton = document.getElementById('submitButton'); 
@@ -147,18 +134,11 @@
             
             document.getElementById('currentYear').textContent = new Date().getFullYear();
 
-
             form.addEventListener('submit', async function (event) {
                 event.preventDefault();
-                console.log("Form submission initiated."); 
                 statusMessage.textContent = 'Submitting details...';
                 submitButton.disabled = true; 
-                try {
-                    tg.MainButton.showProgress(false); 
-                    console.log("Telegram MainButton progress shown."); 
-                } catch(e) {
-                    console.error("Error showing MainButton progress:", e); 
-                }
+                tg.MainButton.showProgress(false); 
 
 
                 const checkInTime = document.getElementById('check_in_time').value;
@@ -173,58 +153,35 @@
 
                 const jsonDataString = JSON.stringify(reportData);
                 console.log("Data to be sent (text only - length):", jsonDataString.length, reportData); 
-                // alert("Попытка отправки данных боту! Проверьте консоль бота.\nData: " + jsonDataString); // DEBUG ALERT - Temporarily commented out
-
+                
                 try {
-                    console.log("Attempting to send data via tg.sendData..."); 
-                    console.log("WebApp tg.isVersionAtLeast('6.1'):", tg.isVersionAtLeast('6.1')); 
-                    console.log("User data from WebApp (tg.initDataUnsafe?.user):", tg.initDataUnsafe?.user); 
-                    
                     tg.sendData(jsonDataString);
-                    
-                    console.log("Data supposedly sent via tg.sendData."); 
-                    // alert("Данные якобы отправлены! Проверьте консоль бота."); // DEBUG ALERT - Temporarily commented out
                     statusMessage.textContent = 'Report details submitted! Bot will ask for photo next.'; 
                 } catch (error) {
                     console.error("Error sending data via tg.sendData:", error); 
-                    // alert("Ошибка отправки данных через tg.sendData: " + error.message); // DEBUG ALERT - Temporarily commented out
                     statusMessage.textContent = 'Error submitting details. Please try again. Details: ' + error.message;
                     submitButton.disabled = false; 
                 } finally {
-                    try {
-                        tg.MainButton.hideProgress();
-                        console.log("Telegram MainButton progress hidden."); 
-                    } catch(e) {
-                        console.error("Error hiding MainButton progress:", e); 
-                    }
+                    tg.MainButton.hideProgress();
                 }
             });
             
-            try {
-                tg.MainButton.setText('Submit Text Details'); 
-                tg.MainButton.onClick(function() {
-                    console.log("Telegram MainButton clicked."); 
-                    form.requestSubmit(); 
-                });
+            tg.MainButton.setText('Submit Text Details'); 
+            tg.MainButton.onClick(function() {
+                form.requestSubmit(); 
+            });
 
-                form.addEventListener('input', function() {
-                    if (form.checkValidity()) {
-                        tg.MainButton.show();
-                        console.log("Telegram MainButton shown (form valid)."); 
-                    } else {
-                        tg.MainButton.hide();
-                        console.log("Telegram MainButton hidden (form invalid)."); 
-                    }
-                });
+            form.addEventListener('input', function() {
                 if (form.checkValidity()) {
-                     tg.MainButton.show();
-                     console.log("Telegram MainButton shown (initial check)."); 
+                    tg.MainButton.show();
                 } else {
-                     tg.MainButton.hide();
-                     console.log("Telegram MainButton hidden (initial check)."); 
+                    tg.MainButton.hide();
                 }
-            } catch (e) {
-                console.error("Error setting up Telegram MainButton:", e); 
+            });
+            if (form.checkValidity()) {
+                 tg.MainButton.show();
+            } else {
+                 tg.MainButton.hide();
             }
         });
     </script>
