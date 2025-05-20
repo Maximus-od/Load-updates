@@ -54,7 +54,11 @@
             cursor: pointer;
             transition: background-color 0.2s;
         }
-        button:hover {
+        button:disabled {
+            opacity: 0.7;
+            cursor: not-allowed;
+        }
+        button:hover:not(:disabled) {
             opacity: 0.9;
         }
         .header {
@@ -109,10 +113,9 @@
             </div>
 
             <div>
-                <label for="bol_picture" class="mt-4">BOL Picture:</label>
+                <label for="bol_picture" class="mt-4">BOL Picture (max 2MB, will be resized):</label>
                 <input type="file" id="bol_picture" name="bol_picture" accept="image/*" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5">
                 <img id="imagePreview" src="#" alt="Image Preview" class="mt-2 rounded-lg hidden" style="max-width: 100%; height: auto; max-height: 200px;"/>
-
             </div>
 
             <button type="submit" id="submitButton" class="mt-6 w-full text-white bg-blue-600 hover:bg-blue-700 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center">
@@ -130,15 +133,8 @@
         const tg = window.Telegram.WebApp;
 
         document.addEventListener('DOMContentLoaded', function () {
-            // Initialize the Telegram Web App
             tg.ready();
-            tg.expand(); // Expand the Web App to full height
-
-            // Set main button (optional, can also use form submit)
-            // tg.MainButton.setText('Submit Report');
-            // tg.MainButton.textColor = '#FFFFFF';
-            // tg.MainButton.color = '#2563eb'; // Blue color, can be themed
-            // tg.MainButton.show();
+            tg.expand(); 
 
             const form = document.getElementById('reportForm');
             const submitButton = document.getElementById('submitButton');
@@ -151,6 +147,14 @@
             bolPictureInput.addEventListener('change', function(event) {
                 const file = event.target.files[0];
                 if (file) {
+                    if (file.size > 2 * 1024 * 1024) { // Check file size (e.g., 2MB limit for initial check)
+                        statusMessage.textContent = 'Image is too large (max 2MB). Please choose a smaller file.';
+                        bolPictureInput.value = ""; // Clear the input
+                        imagePreview.src = "#";
+                        imagePreview.classList.add('hidden');
+                        return;
+                    }
+                    statusMessage.textContent = ''; // Clear previous error
                     const reader = new FileReader();
                     reader.onload = function(e) {
                         imagePreview.src = e.target.result;
@@ -167,7 +171,8 @@
                 event.preventDefault();
                 statusMessage.textContent = 'Submitting...';
                 submitButton.disabled = true;
-                // tg.MainButton.showProgress(false); // Show progress on main button
+                tg.MainButton.showProgress(false);
+
 
                 const checkInTime = document.getElementById('check_in_time').value;
                 const doorNumber = document.getElementById('door_number').value;
@@ -177,12 +182,14 @@
                 let photoDataBase64 = null;
                 if (bolPictureFile) {
                     try {
-                        photoDataBase64 = await toBase64(bolPictureFile);
+                        // Resize image before converting to Base64
+                        photoDataBase64 = await resizeImageAndToB64(bolPictureFile, 800, 0.7); // Max width/height 800px, quality 0.7
+                        console.log("Resized photo Base64 length:", photoDataBase64 ? photoDataBase64.length : 0);
                     } catch (error) {
-                        console.error("Error converting image to Base64:", error);
+                        console.error("Error resizing or converting image to Base64:", error);
                         statusMessage.textContent = 'Error processing image. Please try again.';
                         submitButton.disabled = false;
-                        // tg.MainButton.hideProgress();
+                        tg.MainButton.hideProgress();
                         return;
                     }
                 }
@@ -191,52 +198,93 @@
                     check_in_time: checkInTime,
                     door_number: doorNumber,
                     checkout_time: checkoutTime,
-                    photo_data_base64: photoDataBase64 // This will be null if no file is selected
+                    photo_data_base64: photoDataBase64 
                 };
 
-                // Log data for debugging in browser console
-                console.log("Data to be sent:", reportData);
+                console.log("Data to be sent (length):", JSON.stringify(reportData).length, reportData);
+                
+                if (JSON.stringify(reportData).length > 4000) { // A bit less than 4096 for safety
+                     console.warn("Data is still too long after resize attempt. Photo might be very complex or not resizing enough.");
+                     statusMessage.textContent = 'Report data is too large, even after image processing. Try a smaller image.';
+                     submitButton.disabled = false;
+                     tg.MainButton.hideProgress();
+                     return;
+                }
 
                 try {
-                    // Send data to the bot
                     tg.sendData(JSON.stringify(reportData));
-                    // Note: After sendData, Telegram typically closes the Web App.
-                    // If you want to show a success message here, it might not be visible for long.
-                    // The bot should send a confirmation message back to the user in the chat.
                     statusMessage.textContent = 'Report submitted! You can close this window.';
-                    // tg.MainButton.hideProgress();
-                    // tg.close(); // Optionally close the web app
+                    // tg.close(); // Optionally close after successful submission
                 } catch (error) {
                     console.error("Error sending data via tg.sendData:", error);
-                    statusMessage.textContent = 'Error submitting report. Please try again.';
+                    statusMessage.textContent = 'Error submitting report. Please try again. Details: ' + error.message;
                     submitButton.disabled = false;
-                    // tg.MainButton.hideProgress();
+                } finally {
+                    tg.MainButton.hideProgress();
                 }
             });
+             // Configure MainButton for submission
+            tg.MainButton.setText('Submit Report');
+            tg.MainButton.onClick(function() {
+                form.requestSubmit(); // Trigger form submission when MainButton is clicked
+            });
+            // Show MainButton if all required fields are filled (basic example)
+            // More robust validation can be added
+            form.addEventListener('input', function() {
+                if (form.checkValidity()) {
+                    tg.MainButton.show();
+                } else {
+                    tg.MainButton.hide();
+                }
+            });
+            // Initial check
+            if (form.checkValidity()) {
+                 tg.MainButton.show();
+            } else {
+                 tg.MainButton.hide();
+            }
 
-            // Optional: Handle Telegram MainButton click if you decide to use it
-            // tg.onEvent('mainButtonClicked', function(){
-            //    form.requestSubmit(); // Programmatically submit the form
-            // });
         });
 
-        // Function to convert file to Base64
-        function toBase64(file) {
+        // Function to resize image and convert to Base64
+        function resizeImageAndToB64(file, maxWidthOrHeight, quality) {
             return new Promise((resolve, reject) => {
                 const reader = new FileReader();
                 reader.readAsDataURL(file);
-                reader.onload = () => resolve(reader.result); // reader.result contains the base64 string (e.g., "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQ...")
-                reader.onerror = error => reject(error);
+                reader.onload = (event) => {
+                    const img = new Image();
+                    img.src = event.target.result;
+                    img.onload = () => {
+                        const canvas = document.createElement('canvas');
+                        let width = img.width;
+                        let height = img.height;
+
+                        if (width > height) {
+                            if (width > maxWidthOrHeight) {
+                                height *= maxWidthOrHeight / width;
+                                width = maxWidthOrHeight;
+                            }
+                        } else {
+                            if (height > maxWidthOrHeight) {
+                                width *= maxWidthOrHeight / height;
+                                height = maxWidthOrHeight;
+                            }
+                        }
+                        canvas.width = width;
+                        canvas.height = height;
+                        const ctx = canvas.getContext('2d');
+                        ctx.drawImage(img, 0, 0, width, height);
+                        resolve(canvas.toDataURL('image/jpeg', quality)); // Use image/jpeg for better compression
+                    };
+                    img.onerror = (error) => {
+                        reject(error);
+                    };
+                };
+                reader.onerror = (error) => {
+                    reject(error);
+                };
             });
         }
-
-        // Apply Telegram theme variables
-        // This is a basic example. More sophisticated theming might involve more CSS variables.
-        // tg.onEvent('themeChanged', function() {
-        //    document.body.setAttribute('style', '--tg-theme-bg-color: ' + tg.themeParams.bg_color + '; --tg-theme-text-color: ' + tg.themeParams.text_color + ';');
-        //    // You might need to re-apply styles or use CSS variables more extensively
-        // });
-
     </script>
 </body>
 </html>
