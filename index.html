@@ -1,179 +1,35 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Load Reporter - Web App</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <style>
-        body {
-            font-family: 'Inter', sans-serif;
-        }
-        /* Кастомный стиль для улучшения внешнего вида индикатора загрузки */
-        .loader {
-            border-top-color: #3498db;
-            -webkit-animation: spinner 1.5s linear infinite;
-            animation: spinner 1.5s linear infinite;
-        }
-        @-webkit-keyframes spinner {
-            0% { -webkit-transform: rotate(0deg); }
-            100% { -webkit-transform: rotate(360deg); }
-        }
-        @keyframes spinner {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-    </style>
+    <title>Load Update Submission</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
 </head>
-<body class="bg-gray-100 flex items-center justify-center min-h-screen p-4">
-    <div class="bg-white p-6 sm:p-8 rounded-xl shadow-2xl w-full max-w-lg">
-        <div class="text-center mb-8">
-            <h1 class="text-3xl font-bold text-gray-800">Отправить Отчет о Загрузке</h1>
-            <p class="text-gray-600 mt-2">Заполните все поля и прикрепите фото BOL.</p>
-        </div>
+<body>
+    <div class="container">
+        <h1>Submit Load Update</h1>
+        <div id="user-info"></div>
+        <form id="report-form">
+            <label for="check-in-time">Check-IN Time (e.g., 9:30 am / 0930):</label>
+            <input type="text" id="check-in-time" name="check_in_time" required>
 
-        <form id="reportForm" class="space-y-6">
-            <div>
-                <label for="carrier_id" class="block text-sm font-medium text-gray-700 mb-1">ID Перевозчика:</label>
-                <input type="number" id="carrier_id" name="carrier_id" required
-                       class="w-full px-4 py-2.5 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-150 ease-in-out"
-                       placeholder="Ваш числовой ID">
-            </div>
+            <label for="door-number">Door #:</label>
+            <input type="text" id="door-number" name="door_number" required>
 
-            <div>
-                <label for="carrier_name" class="block text-sm font-medium text-gray-700 mb-1">Имя/Название Перевозчика:</label>
-                <input type="text" id="carrier_name" name="carrier_name" required
-                       class="w-full px-4 py-2.5 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-150 ease-in-out"
-                       placeholder="Например, Иван Иванов или ООО Ромашка">
-            </div>
+            <label for="checkout-time">Check-OUT Time (e.g., 1:30 pm / 1330):</label>
+            <input type="text" id="checkout-time" name="checkout_time" required>
 
-            <div>
-                <label for="check_in_time" class="block text-sm font-medium text-gray-700 mb-1">Время Check-IN:</label>
-                <input type="text" id="check_in_time" name="check_in_time" required
-                       class="w-full px-4 py-2.5 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-150 ease-in-out"
-                       placeholder="Например, 09:30 или 9:30 AM">
-            </div>
+            <label for="bol-image">BOL Picture:</label>
+            <input type="file" id="bol-image" name="bol_image" accept="image/*" required>
+            <img id="image-preview" src="#" alt="Image Preview" style="display:none; max-width: 100%; margin-top: 10px;"/>
 
-            <div>
-                <label for="door_number" class="block text-sm font-medium text-gray-700 mb-1">Номер Ворот (Door #):</label>
-                <input type="text" id="door_number" name="door_number" required
-                       class="w-full px-4 py-2.5 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-150 ease-in-out"
-                       placeholder="Например, D42 или 105">
-            </div>
-
-            <div>
-                <label for="checkout_time" class="block text-sm font-medium text-gray-700 mb-1">Время Check-OUT:</label>
-                <input type="text" id="checkout_time" name="checkout_time" required
-                       class="w-full px-4 py-2.5 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-150 ease-in-out"
-                       placeholder="Например, 17:00 или 5:00 PM">
-            </div>
-
-            <div>
-                <label for="bol_picture" class="block text-sm font-medium text-gray-700 mb-1">Фото BOL (Bill of Lading):</label>
-                <input type="file" id="bol_picture" name="bol_picture" accept="image/*" required
-                       class="w-full text-sm text-gray-500 file:mr-4 file:py-2.5 file:px-4
-                              file:rounded-lg file:border-0 file:text-sm file:font-semibold
-                              file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100
-                              border border-gray-300 rounded-lg shadow-sm cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-                <img id="imagePreview" src="#" alt="Предпросмотр фото" class="mt-4 rounded-lg max-h-60 w-auto hidden shadow"/>
-            </div>
-
-            <div>
-                <button type="submit" id="submitButton"
-                        class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-4 rounded-lg shadow-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition duration-150 ease-in-out flex items-center justify-center">
-                    <span id="buttonText">Отправить Отчет</span>
-                    <div id="loader" class="loader ease-linear rounded-full border-4 border-t-4 border-gray-200 h-6 w-6 ml-3 hidden"></div>
-                </button>
-            </div>
+            <button type="submit" id="submit-button">Submit Report</button>
         </form>
-
-        <div id="messageBox" class="mt-6 p-4 rounded-lg text-center hidden">
-            </div>
+        <div id="message-area"></div>
     </div>
 
-    <script>
-        const reportForm = document.getElementById('reportForm');
-        const submitButton = document.getElementById('submitButton');
-        const buttonText = document.getElementById('buttonText');
-        const loader = document.getElementById('loader');
-        const messageBox = document.getElementById('messageBox');
-        const imagePreview = document.getElementById('imagePreview');
-        const bolPictureInput = document.getElementById('bol_picture');
-
-        // URL вашего API бэкенда. Замените, если ваш API развернут где-то еще.
-        // При локальном тестировании FastAPI, это будет http://localhost:8000
-        const API_URL = 'http://localhost:8000/api/submit_report/'; // ЗАМЕНИТЕ НА АКТУАЛЬНЫЙ URL ВАШЕГО API
-
-        bolPictureInput.addEventListener('change', function(event) {
-            const file = event.target.files[0];
-            if (file) {
-                const reader = new FileReader();
-                reader.onload = function(e) {
-                    imagePreview.src = e.target.result;
-                    imagePreview.classList.remove('hidden');
-                }
-                reader.readAsDataURL(file);
-            } else {
-                imagePreview.classList.add('hidden');
-            }
-        });
-
-        reportForm.addEventListener('submit', async function(event) {
-            event.preventDefault(); // Предотвращаем стандартную отправку формы
-
-            // Показываем индикатор загрузки и блокируем кнопку
-            buttonText.classList.add('hidden');
-            loader.classList.remove('hidden');
-            submitButton.disabled = true;
-            messageBox.classList.add('hidden'); // Скрываем предыдущие сообщения
-
-            const formData = new FormData();
-            formData.append('carrier_id', document.getElementById('carrier_id').value);
-            formData.append('carrier_name', document.getElementById('carrier_name').value);
-            formData.append('check_in_time', document.getElementById('check_in_time').value);
-            formData.append('door_number', document.getElementById('door_number').value);
-            formData.append('checkout_time', document.getElementById('checkout_time').value);
-            formData.append('bol_picture', document.getElementById('bol_picture').files[0]);
-
-            try {
-                const response = await fetch(API_URL, {
-                    method: 'POST',
-                    body: formData, // FormData автоматически устанавливает правильный Content-Type (multipart/form-data)
-                    // headers: { // Не устанавливайте Content-Type вручную при использовании FormData с файлами
-                    //     // 'Content-Type': 'multipart/form-data' // Браузер сделает это сам с нужным boundary
-                    // }
-                });
-
-                const result = await response.json();
-
-                if (response.ok) {
-                    showMessage(`Успешно! ${result.message}`, 'success');
-                    reportForm.reset(); // Очищаем форму
-                    imagePreview.classList.add('hidden'); // Скрываем предпросмотр
-                } else {
-                    showMessage(`Ошибка (${response.status}): ${result.detail || 'Не удалось отправить отчет.'}`, 'error');
-                }
-            } catch (error) {
-                console.error('Ошибка при отправке:', error);
-                showMessage(`Критическая ошибка: ${error.message}. Проверьте консоль и URL API.`, 'error');
-            } finally {
-                // Возвращаем кнопку в исходное состояние
-                buttonText.classList.remove('hidden');
-                loader.classList.add('hidden');
-                submitButton.disabled = false;
-            }
-        });
-
-        function showMessage(message, type) {
-            messageBox.textContent = message;
-            messageBox.classList.remove('hidden', 'bg-green-100', 'text-green-700', 'bg-red-100', 'text-red-700');
-            if (type === 'success') {
-                messageBox.classList.add('bg-green-100', 'text-green-700');
-            } else if (type === 'error') {
-                messageBox.classList.add('bg-red-100', 'text-red-700');
-            }
-            messageBox.classList.remove('hidden');
-        }
-    </script>
+    <script src="script.js"></script>
 </body>
 </html>
