@@ -30,7 +30,7 @@
             margin-bottom: 0.5rem;
             font-weight: 500; /* Medium font weight for labels */
         }
-        input[type="text"], input[type="time"], input[type="file"] {
+        input[type="text"], input[type="time"] { /* Removed input[type="file"] from this rule */
             width: 100%;
             padding: 0.75rem;
             margin-bottom: 1rem;
@@ -40,9 +40,7 @@
             background-color: var(--tg-theme-secondary-bg-color, #f9fafb); /* Input background */
             color: var(--tg-theme-text-color, #000000);
         }
-        input[type="file"] {
-            padding: 0.5rem; /* Slightly less padding for file input */
-        }
+        /* Removed input[type="file"] specific style as it's removed */
         button {
             width: 100%;
             padding: 0.75rem 1.5rem;
@@ -112,14 +110,8 @@
                 <input type="time" id="checkout_time" name="checkout_time" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" required>
             </div>
 
-            <div>
-                <label for="bol_picture" class="mt-4">BOL Picture (max 2MB, will be resized):</label>
-                <input type="file" id="bol_picture" name="bol_picture" accept="image/*" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5">
-                <img id="imagePreview" src="#" alt="Image Preview" class="mt-2 rounded-lg hidden" style="max-width: 100%; height: auto; max-height: 200px;"/>
-            </div>
-
             <button type="submit" id="submitButton" class="mt-6 w-full text-white bg-blue-600 hover:bg-blue-700 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center">
-                Submit Report
+                Submit Text Details
             </button>
         </form>
     </div>
@@ -137,101 +129,69 @@
             tg.expand(); 
 
             const form = document.getElementById('reportForm');
-            const submitButton = document.getElementById('submitButton');
+            const submitButton = document.getElementById('submitButton'); // HTML button
             const statusMessage = document.getElementById('statusMessage');
-            const imagePreview = document.getElementById('imagePreview');
-            const bolPictureInput = document.getElementById('bol_picture');
             
             document.getElementById('currentYear').textContent = new Date().getFullYear();
 
-            bolPictureInput.addEventListener('change', function(event) {
-                const file = event.target.files[0];
-                if (file) {
-                    if (file.size > 2 * 1024 * 1024) { // Check file size (e.g., 2MB limit for initial check)
-                        statusMessage.textContent = 'Image is too large (max 2MB). Please choose a smaller file.';
-                        bolPictureInput.value = ""; // Clear the input
-                        imagePreview.src = "#";
-                        imagePreview.classList.add('hidden');
-                        return;
-                    }
-                    statusMessage.textContent = ''; // Clear previous error
-                    const reader = new FileReader();
-                    reader.onload = function(e) {
-                        imagePreview.src = e.target.result;
-                        imagePreview.classList.remove('hidden');
-                    }
-                    reader.readAsDataURL(file);
-                } else {
-                    imagePreview.src = "#";
-                    imagePreview.classList.add('hidden');
-                }
-            });
+            // Removed bolPictureInput and imagePreview related code
 
             form.addEventListener('submit', async function (event) {
                 event.preventDefault();
-                statusMessage.textContent = 'Submitting...';
-                submitButton.disabled = true;
-                tg.MainButton.showProgress(false);
+                statusMessage.textContent = 'Submitting details...';
+                submitButton.disabled = true; // Disable HTML button
+                tg.MainButton.showProgress(false); // Show progress on Telegram's MainButton
 
 
                 const checkInTime = document.getElementById('check_in_time').value;
                 const doorNumber = document.getElementById('door_number').value;
                 const checkoutTime = document.getElementById('checkout_time').value;
-                const bolPictureFile = bolPictureInput.files[0];
-
-                let photoDataBase64 = null;
-                if (bolPictureFile) {
-                    try {
-                        // Resize image before converting to Base64
-                        // Changed maxWidthOrHeight to 600 and quality to 0.65
-                        photoDataBase64 = await resizeImageAndToB64(bolPictureFile, 600, 0.65); 
-                        console.log("Resized photo Base64 length:", photoDataBase64 ? photoDataBase64.length : 0);
-                    } catch (error) {
-                        console.error("Error resizing or converting image to Base64:", error);
-                        statusMessage.textContent = 'Error processing image. Please try again.';
-                        submitButton.disabled = false;
-                        tg.MainButton.hideProgress();
-                        return;
-                    }
-                }
+                // photoDataBase64 is no longer collected here
 
                 const reportData = {
                     check_in_time: checkInTime,
                     door_number: doorNumber,
-                    checkout_time: checkoutTime,
-                    photo_data_base64: photoDataBase64 
+                    checkout_time: checkoutTime
+                    // photo_data_base64: null // Explicitly not sending photo data
                 };
 
                 const jsonDataString = JSON.stringify(reportData);
-                console.log("Data to be sent (length):", jsonDataString.length, reportData);
+                console.log("Data to be sent (text only - length):", jsonDataString.length, reportData);
                 
-                if (jsonDataString.length > 4000) { // A bit less than 4096 for safety
-                     console.warn("Data is still too long after resize attempt. Photo might be very complex or not resizing enough. Length: " + jsonDataString.length);
-                     statusMessage.textContent = 'Report data is too large (' + jsonDataString.length + ' bytes), even after image processing. Try a smaller or simpler image.';
-                     submitButton.disabled = false;
-                     tg.MainButton.hideProgress();
-                     return;
-                }
+                // The 4000 bytes limit should be easily met with text-only data
+                // if (jsonDataString.length > 4000) { 
+                //      statusMessage.textContent = 'Report data is too large. This should not happen with text only.';
+                //      submitButton.disabled = false;
+                //      tg.MainButton.hideProgress();
+                //      return;
+                // }
 
                 try {
                     tg.sendData(jsonDataString);
-                    statusMessage.textContent = 'Report submitted! You can close this window.';
-                    // tg.close(); // Optionally close after successful submission
+                    // After sendData, Telegram will likely close the WebApp or the user will.
+                    // The bot will then ask for the photo in the chat.
+                    // No success message here as the app might close.
                 } catch (error) {
                     console.error("Error sending data via tg.sendData:", error);
-                    statusMessage.textContent = 'Error submitting report. Please try again. Details: ' + error.message;
-                    submitButton.disabled = false;
+                    statusMessage.textContent = 'Error submitting details. Please try again. Details: ' + error.message;
+                    submitButton.disabled = false; // Re-enable HTML button on error
                 } finally {
                     tg.MainButton.hideProgress();
+                    // Do not re-enable submitButton here if sendData was successful,
+                    // as the app might close or the flow continues in chat.
+                    // If sendData fails, it's re-enabled in the catch block.
                 }
             });
-             // Configure MainButton for submission
-            tg.MainButton.setText('Submit Report');
+            
+            // Configure Telegram's MainButton for submission
+            tg.MainButton.setText('Submit Text Details'); // Updated button text
             tg.MainButton.onClick(function() {
-                form.requestSubmit(); // Trigger form submission when MainButton is clicked
+                // Trigger form submission when MainButton is clicked
+                // Ensure the HTML button is also triggered or directly call the submit logic
+                form.requestSubmit(); 
             });
-            // Show MainButton if all required fields are filled (basic example)
-            // More robust validation can be added
+
+            // Show MainButton if all required fields are filled
             form.addEventListener('input', function() {
                 if (form.checkValidity()) {
                     tg.MainButton.show();
@@ -239,56 +199,15 @@
                     tg.MainButton.hide();
                 }
             });
-            // Initial check
+            // Initial check for MainButton visibility
             if (form.checkValidity()) {
                  tg.MainButton.show();
             } else {
                  tg.MainButton.hide();
             }
-
         });
 
-        // Function to resize image and convert to Base64
-        function resizeImageAndToB64(file, maxWidthOrHeight, quality) {
-            return new Promise((resolve, reject) => {
-                const reader = new FileReader();
-                reader.readAsDataURL(file);
-                reader.onload = (event) => {
-                    const img = new Image();
-                    img.src = event.target.result;
-                    img.onload = () => {
-                        const canvas = document.createElement('canvas');
-                        let width = img.width;
-                        let height = img.height;
-
-                        if (width > height) {
-                            if (width > maxWidthOrHeight) {
-                                height *= maxWidthOrHeight / width;
-                                width = maxWidthOrHeight;
-                            }
-                        } else {
-                            if (height > maxWidthOrHeight) {
-                                width *= maxWidthOrHeight / height;
-                                height = maxWidthOrHeight;
-                            }
-                        }
-                        canvas.width = width;
-                        canvas.height = height;
-                        const ctx = canvas.getContext('2d');
-                        ctx.drawImage(img, 0, 0, width, height);
-                        resolve(canvas.toDataURL('image/jpeg', quality)); // Use image/jpeg for better compression
-                    };
-                    img.onerror = (error) => {
-                        console.error("Image loading error in resize function:", error);
-                        reject(error);
-                    };
-                };
-                reader.onerror = (error) => {
-                    console.error("FileReader error in resize function:", error);
-                    reject(error);
-                };
-            });
-        }
+        // resizeImageAndToB64 function is no longer needed here
     </script>
 </body>
 </html>
