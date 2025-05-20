@@ -123,91 +123,107 @@
 
     <script>
         const tg = window.Telegram.WebApp;
+        console.log("Telegram WebApp object (tg):", tg); // DEBUG: Check tg object
 
         document.addEventListener('DOMContentLoaded', function () {
-            tg.ready();
-            tg.expand(); 
+            console.log("DOM fully loaded and parsed"); // DEBUG
+            try {
+                tg.ready();
+                console.log("Telegram WebApp SDK 'ready' called."); // DEBUG
+                tg.expand(); 
+                console.log("Telegram WebApp SDK 'expand' called."); // DEBUG
+            } catch (e) {
+                console.error("Error during Telegram WebApp SDK initialization:", e); // DEBUG
+            }
+
 
             const form = document.getElementById('reportForm');
-            const submitButton = document.getElementById('submitButton'); // HTML button
+            const submitButton = document.getElementById('submitButton'); 
             const statusMessage = document.getElementById('statusMessage');
             
             document.getElementById('currentYear').textContent = new Date().getFullYear();
 
-            // Removed bolPictureInput and imagePreview related code
 
             form.addEventListener('submit', async function (event) {
                 event.preventDefault();
+                console.log("Form submission initiated."); // DEBUG
                 statusMessage.textContent = 'Submitting details...';
-                submitButton.disabled = true; // Disable HTML button
-                tg.MainButton.showProgress(false); // Show progress on Telegram's MainButton
+                submitButton.disabled = true; 
+                try {
+                    tg.MainButton.showProgress(false); 
+                    console.log("Telegram MainButton progress shown."); // DEBUG
+                } catch(e) {
+                    console.error("Error showing MainButton progress:", e); // DEBUG
+                }
 
 
                 const checkInTime = document.getElementById('check_in_time').value;
                 const doorNumber = document.getElementById('door_number').value;
                 const checkoutTime = document.getElementById('checkout_time').value;
-                // photoDataBase64 is no longer collected here
-
+                
                 const reportData = {
                     check_in_time: checkInTime,
                     door_number: doorNumber,
                     checkout_time: checkoutTime
-                    // photo_data_base64: null // Explicitly not sending photo data
                 };
 
                 const jsonDataString = JSON.stringify(reportData);
-                console.log("Data to be sent (text only - length):", jsonDataString.length, reportData);
-                
-                // The 4000 bytes limit should be easily met with text-only data
-                // if (jsonDataString.length > 4000) { 
-                //      statusMessage.textContent = 'Report data is too large. This should not happen with text only.';
-                //      submitButton.disabled = false;
-                //      tg.MainButton.hideProgress();
-                //      return;
-                // }
+                console.log("Data to be sent (text only - length):", jsonDataString.length, reportData); // DEBUG
+                alert("Попытка отправки данных боту! Проверьте консоль бота.\nData: " + jsonDataString); // DEBUG ALERT
 
                 try {
+                    console.log("Attempting to send data via tg.sendData..."); // DEBUG
+                    console.log("WebApp fully initialized check:", tg.isVersionAtLeast('6.1')); // DEBUG: Check API version
+                    console.log("User data from WebApp (initDataUnsafe):", tg.initDataUnsafe?.user); // DEBUG: Check user data
+                    
                     tg.sendData(jsonDataString);
-                    // After sendData, Telegram will likely close the WebApp or the user will.
-                    // The bot will then ask for the photo in the chat.
-                    // No success message here as the app might close.
+                    
+                    console.log("Data supposedly sent via tg.sendData."); // DEBUG
+                    alert("Данные якобы отправлены! Проверьте консоль бота."); // DEBUG ALERT
+                    statusMessage.textContent = 'Report details submitted! Bot will ask for photo next.'; 
+                                        // This message might not be visible for long if app closes
                 } catch (error) {
-                    console.error("Error sending data via tg.sendData:", error);
+                    console.error("Error sending data via tg.sendData:", error); // DEBUG
+                    alert("Ошибка отправки данных через tg.sendData: " + error.message); // DEBUG ALERT
                     statusMessage.textContent = 'Error submitting details. Please try again. Details: ' + error.message;
-                    submitButton.disabled = false; // Re-enable HTML button on error
+                    submitButton.disabled = false; 
                 } finally {
-                    tg.MainButton.hideProgress();
-                    // Do not re-enable submitButton here if sendData was successful,
-                    // as the app might close or the flow continues in chat.
-                    // If sendData fails, it's re-enabled in the catch block.
+                    try {
+                        tg.MainButton.hideProgress();
+                        console.log("Telegram MainButton progress hidden."); // DEBUG
+                    } catch(e) {
+                        console.error("Error hiding MainButton progress:", e); // DEBUG
+                    }
                 }
             });
             
-            // Configure Telegram's MainButton for submission
-            tg.MainButton.setText('Submit Text Details'); // Updated button text
-            tg.MainButton.onClick(function() {
-                // Trigger form submission when MainButton is clicked
-                // Ensure the HTML button is also triggered or directly call the submit logic
-                form.requestSubmit(); 
-            });
+            try {
+                tg.MainButton.setText('Submit Text Details'); 
+                tg.MainButton.onClick(function() {
+                    console.log("Telegram MainButton clicked."); // DEBUG
+                    form.requestSubmit(); 
+                });
 
-            // Show MainButton if all required fields are filled
-            form.addEventListener('input', function() {
+                form.addEventListener('input', function() {
+                    if (form.checkValidity()) {
+                        tg.MainButton.show();
+                        console.log("Telegram MainButton shown (form valid)."); // DEBUG
+                    } else {
+                        tg.MainButton.hide();
+                        console.log("Telegram MainButton hidden (form invalid)."); // DEBUG
+                    }
+                });
                 if (form.checkValidity()) {
-                    tg.MainButton.show();
+                     tg.MainButton.show();
+                     console.log("Telegram MainButton shown (initial check)."); // DEBUG
                 } else {
-                    tg.MainButton.hide();
+                     tg.MainButton.hide();
+                     console.log("Telegram MainButton hidden (initial check)."); // DEBUG
                 }
-            });
-            // Initial check for MainButton visibility
-            if (form.checkValidity()) {
-                 tg.MainButton.show();
-            } else {
-                 tg.MainButton.hide();
+            } catch (e) {
+                console.error("Error setting up Telegram MainButton:", e); // DEBUG
             }
         });
-
-        // resizeImageAndToB64 function is no longer needed here
     </script>
 </body>
 </html>
