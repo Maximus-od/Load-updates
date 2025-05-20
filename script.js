@@ -7,7 +7,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const bolImageInput = document.getElementById('bol-image');
 
     // !!! IMPORTANT: Configure this to your backend API endpoint !!!
-    const backendApiUrl = "http://83.24.135.174:8081/web/submit_report"; // e.g., "http://localhost:8081/web/submit_report" for local testing or "https://yourdomain.com/web/submit_report"
+    const backendApiUrl = "http://127.0.0.1:4040/web/submit_report"; // e.g., "http://localhost:8081/web/submit_report" for local testing or "https://yourdomain.com/web/submit_report"
 
     let tgUser = null;
 
